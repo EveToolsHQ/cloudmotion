@@ -74,7 +74,6 @@ Usage:
 Options:
   --bundle-id <id>        Required bundle ID slug (letters, numbers, _, -)
   --composition-id <id>   Required for render
-  --bundle-version <ver>  Pin bundle version (e.g. v2); default is latest
   --input-props <json>    JSON object passed to the composition
   --json                  Print raw JSON output
 
@@ -198,8 +197,12 @@ async function runBundlesUpload(
     return;
   }
 
+  const runtimeNote = result.runtimeReady
+    ? 'Render infra ready.'
+    : 'Provisioning render infra — renders may return 409 until ready.';
+
   process.stdout.write(
-    `Uploaded bundle ${result.bundleId}@${result.bundleVersion}\n`
+    `Uploaded bundle ${result.bundleId} (Remotion ${result.remotionVersion}). ${runtimeNote}\n`
   );
 }
 
@@ -210,9 +213,6 @@ async function runRender(
   const bundleId = typeof flags['bundle-id'] === 'string' ? flags['bundle-id'] : undefined;
   const compositionId =
     typeof flags['composition-id'] === 'string' ? flags['composition-id'] : undefined;
-  const bundleVersion =
-    typeof flags['bundle-version'] === 'string' ? flags['bundle-version'] : undefined;
-
   if (!bundleId) {
     throw new Error(
       'Missing --bundle-id. Example: npx cloudmotion render --bundle-id my-site --composition-id Main'
@@ -227,7 +227,6 @@ async function runRender(
 
   const { renderId } = await client.renderMedia({
     bundleId,
-    bundleVersion,
     compositionId,
     inputProps: parseInputProps(flags)
   });

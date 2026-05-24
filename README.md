@@ -24,7 +24,7 @@ npx cloudmotion render \
   --composition-id MyComp
 ```
 
-Each upload creates a new immutable version (`v1`, `v2`, …) under that bundle ID. The render command prints progress to stderr and the output URL on stdout when finished.
+Re-uploading under the same bundle ID replaces the latest bundle used for renders. Upload complete returns whether render infra is ready (`runtimeReady`); if not, wait before rendering (API may return 409). The render command prints progress to stderr and the output URL on stdout when finished.
 
 ## SDK
 
@@ -55,20 +55,10 @@ while (status.status !== "completed" && status.status !== "failed") {
 console.log(status.outputUrl);
 ```
 
-Pin a specific bundle version:
-
-```ts
-await client.renderMedia({
-  bundleId: "my-project",
-  bundleVersion: "v2",
-  compositionId: "MyComp",
-});
-```
-
 ### API surface
 
 - `createClient({ token, fetch? })` — optional custom `fetch` (e.g. for timeouts or logging)
-- `client.uploadBundle({ bundleDir, bundleId, onUploadProgress? })`
+- `client.uploadBundle({ bundleDir, bundleId, onUploadProgress? })` — returns `{ bundleId, uploadId, remotionVersion, runtimeReady }`
 - `client.renderMedia(input)` / `client.renderStill(input)` — returns `{ renderId }`
 - `client.getRenderProgress(renderId)` — poll `{ status, progress, error?, outputUrl? }` (server refreshes from Lambda)
 
@@ -77,7 +67,7 @@ await client.renderMedia({
 See the full reference at [cloudmotion.dev/docs](https://cloudmotion.dev/docs).
 
 ```bash
-# Start render (omit bundleVersion to use the highest confirmed version)
+# Start render
 curl -sS -X POST "https://api.cloudmotion.dev/v1/renders" \
   -H "Authorization: Bearer cm_..." \
   -H "Content-Type: application/json" \

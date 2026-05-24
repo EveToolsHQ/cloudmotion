@@ -10,9 +10,15 @@ import { API_VERSION } from './types.js';
 
 interface InitBundleUploadResponse {
   bundleId: string;
-  bundleVersion: string;
+  uploadId: string;
   uploadUrls: Record<string, string>;
   contentTypes: Record<string, string>;
+}
+
+interface CompleteBundleUploadResponse {
+  ok: boolean;
+  remotionVersion: string;
+  runtimeReady: boolean;
 }
 
 interface BundleFile {
@@ -180,17 +186,19 @@ export async function uploadBundle(client: ApiClient, input: UploadBundleInput):
     });
   });
 
-  await client.request<{ ok: boolean }>({
+  const completeResponse = await client.request<CompleteBundleUploadResponse>({
     method: 'POST',
     pathname: `/${API_VERSION}/bundles/upload/complete`,
     json: {
       bundleId: initResponse.bundleId,
-      bundleVersion: initResponse.bundleVersion
+      uploadId: initResponse.uploadId
     }
   });
 
   return {
     bundleId: initResponse.bundleId,
-    bundleVersion: initResponse.bundleVersion
+    uploadId: initResponse.uploadId,
+    remotionVersion: completeResponse.remotionVersion,
+    runtimeReady: completeResponse.runtimeReady === true
   };
 }

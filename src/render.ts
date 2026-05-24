@@ -9,7 +9,6 @@ import { API_VERSION } from './types.js';
 
 type RenderRequestBody = {
   bundleId: string;
-  bundleVersion?: string;
   compositionId: string;
   kind?: 'media' | 'still';
   inputProps?: unknown;
@@ -28,10 +27,6 @@ function buildRenderRequestBody(
     bundleId: input.bundleId,
     compositionId: input.compositionId
   };
-
-  if (input.bundleVersion) {
-    body.bundleVersion = input.bundleVersion;
-  }
 
   if (input.inputProps !== undefined) {
     body.inputProps = input.inputProps;

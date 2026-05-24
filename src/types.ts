@@ -13,7 +13,9 @@ export interface ClientOptions {
 
 export interface Bundle {
   bundleId: string;
-  bundleVersion: string;
+  uploadId: string;
+  remotionVersion: string;
+  runtimeReady: boolean;
 }
 
 export type RenderStatus = 'queued' | 'rendering' | 'completed' | 'failed';
@@ -44,7 +46,6 @@ export interface UploadBundleInput {
 
 export interface RenderMediaInput {
   bundleId: string;
-  bundleVersion?: string;
   compositionId: string;
   inputProps?: unknown;
   codec?: string;
@@ -54,7 +55,6 @@ export interface RenderMediaInput {
 
 export interface RenderStillInput {
   bundleId: string;
-  bundleVersion?: string;
   compositionId: string;
   inputProps?: unknown;
   imageFormat?: string;
