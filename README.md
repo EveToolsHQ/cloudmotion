@@ -78,4 +78,4 @@ curl -sS "https://api.cloudmotion.dev/v1/renders/$RENDER_ID" \
   -H "Authorization: Bearer cm_..."
 ```
 
-Bundle upload via curl uses `POST /v1/bundles/upload/init` → PUT files to `uploadUrls` → `POST /v1/bundles/upload/complete`; the CLI/SDK automates that flow.
+Bundle upload via curl uses `POST /v1/bundles/upload/init` → PUT each file to `uploads[].url` with `uploads[].headers` → `POST /v1/bundles/upload/complete`; the CLI/SDK automates that flow.

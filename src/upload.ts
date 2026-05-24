@@ -8,11 +8,18 @@ import type { FetchLike } from './types.js';
 import type { ApiClient, Bundle, UploadBundleInput } from './types.js';
 import { API_VERSION } from './types.js';
 
+interface BundleFileUploadInstruction {
+  path: string;
+  method: string;
+  url: string;
+  headers: Record<string, string>;
+}
+
 interface InitBundleUploadResponse {
   bundleId: string;
   uploadId: string;
-  uploadUrls: Record<string, string>;
-  contentTypes: Record<string, string>;
+  expiresAt: string;
+  uploads: BundleFileUploadInstruction[];
 }
 
 interface CompleteBundleUploadResponse {
@@ -91,20 +98,42 @@ async function runWithConcurrency<T>(
   await Promise.all(Array.from({ length: limit }, () => runWorker()));
 }
 
+function getUploadHeader(headers: Record<string, string>, name: string): string | undefined {
+  const target = name.toLowerCase();
+
+  for (const [key, value] of Object.entries(headers)) {
+    if (key.toLowerCase() === target) {
+      return value;
+    }
+  }
+
+  return undefined;
+}
+
 async function uploadFileToPresignedUrl(
   fetchFn: FetchLike,
-  uploadUrl: string,
-  file: BundleFile,
-  contentType: string
+  upload: BundleFileUploadInstruction,
+  file: BundleFile
 ): Promise<void> {
+  const contentType = getUploadHeader(upload.headers, 'Content-Type');
+  const contentLength = getUploadHeader(upload.headers, 'Content-Length');
+
+  if (!contentType) {
+    throw new Error(`Missing Content-Type for ${file.path}`);
+  }
+
+  if (!contentLength) {
+    throw new Error(`Missing Content-Length for ${file.path}`);
+  }
+
   const fileStream = createReadStream(file.absolutePath);
 
   try {
-    const putResponse = await fetchFn(uploadUrl, {
-      method: 'PUT',
+    const putResponse = await fetchFn(upload.url, {
+      method: upload.method || 'PUT',
       headers: {
         'content-type': contentType,
-        'content-length': String(file.size)
+        'content-length': contentLength
       },
       body: Readable.toWeb(fileStream),
       duplex: 'half'
@@ -161,19 +190,24 @@ export async function uploadBundle(client: ApiClient, input: UploadBundleInput):
     sizeUploaded: 0
   });
 
+  const uploadByPath = new Map(
+    initResponse.uploads
+      .filter((entry) => typeof entry.path === 'string')
+      .map((entry) => [entry.path, entry] as const)
+  );
+
+  if (uploadByPath.size !== bundleFiles.length) {
+    throw new Error('Upload init returned an unexpected file count.');
+  }
+
   await runWithConcurrency(bundleFiles, DEFAULT_UPLOAD_CONCURRENCY, async (file) => {
-    const uploadUrl = initResponse.uploadUrls[file.path];
-    const contentType = initResponse.contentTypes[file.path];
+    const upload = uploadByPath.get(file.path);
 
-    if (!uploadUrl) {
-      throw new Error(`No presigned URL returned for file: ${file.path}`);
+    if (!upload || typeof upload.url !== 'string') {
+      throw new Error(`No presigned upload returned for file: ${file.path}`);
     }
 
-    if (!contentType) {
-      throw new Error(`No Content-Type returned for file: ${file.path}`);
-    }
-
-    await uploadFileToPresignedUrl(client.fetch, uploadUrl, file, contentType);
+    await uploadFileToPresignedUrl(client.fetch, upload, file);
 
     sizeUploaded += file.size;
     filesUploaded += 1;
