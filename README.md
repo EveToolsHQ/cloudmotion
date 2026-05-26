@@ -1,4 +1,4 @@
-# cloudmotion
+# cloudmotion [![npm version](https://img.shields.io/npm/v/cloudmotion.svg?style=flat-square)](https://www.npmjs.com/package/cloudmotion)
 
 Node.js client and CLI for [Cloudmotion](https://cloudmotion.dev). The HTTP API at [api.cloudmotion.dev](https://api.cloudmotion.dev) is canonical; this package adds bundle upload orchestration and typed render calls for Node scripts and CI. Full API reference: [cloudmotion.dev/docs](https://cloudmotion.dev/docs).
 
